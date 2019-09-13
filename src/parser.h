@@ -39,35 +39,53 @@ namespace {
         Value *codegen() override;
     };
 
-    // 第一回の課題では関数の定義・呼び出しは扱いませんが、後々のつながりを良くする為と
-    // オブジェクトファイルのエントリーポイントを作り"それらしく"するために関数と関数シグネチャー
-    // のクラスを作ります。
-    //
-    // PrototypeAST - 関数シグネチャーのクラスで、関数の名前と引数の名前を表すクラスです。
-    class PrototypeAST {
-        std::string Name;
-        std::vector<std::string> Args;
+    // VariableExprAST - 変数の名前を表すクラス
+    class VariableExprAST : public ExprAST {
+        std::string variableName;
 
         public:
-        PrototypeAST(const std::string &Name, std::vector<std::string> Args)
-            : Name(Name), Args(std::move(Args)) {}
+            VariableExprAST(const std::string &variableName) : variableName(variableName) {}
+            Value *codegen() override;
+    };
 
-        Function *codegen();
-        const std::string &getName() const { return Name; }
+    // CallExprAST - 関数呼び出しを表すクラス
+    class CallExprAST : public ExprAST {
+        std::string callee;
+        std::vector<std::unique_ptr<ExprAST>> args;
+
+        public:
+            CallExprAST(const std::string &callee,
+                    std::vector<std::unique_ptr<ExprAST>> args)
+                : callee(callee), args(std::move(args)) {}
+
+            Value *codegen() override;
+    };
+
+    // PrototypeAST - 関数シグネチャーのクラスで、関数の名前と引数の名前を表すクラス
+    class PrototypeAST {
+        std::string Name;
+        std::vector<std::string> args;
+
+        public:
+            PrototypeAST(const std::string &Name, std::vector<std::string> args)
+                : Name(Name), args(std::move(args)) {}
+
+            Function *codegen();
+            const std::string &getFunctionName() const { return Name; }
     };
 
     // FunctionAST - 関数シグネチャー(PrototypeAST)に加えて関数のbody(C++で言うint foo) {...}の中身)を
     // 表すクラスです。
     class FunctionAST {
-        std::unique_ptr<PrototypeAST> Proto;
-        std::unique_ptr<ExprAST> Body;
+        std::unique_ptr<PrototypeAST> proto;
+        std::unique_ptr<ExprAST> body;
 
         public:
-        FunctionAST(std::unique_ptr<PrototypeAST> Proto,
-                std::unique_ptr<ExprAST> Body)
-            : Proto(std::move(Proto)), Body(std::move(Body)) {}
+            FunctionAST(std::unique_ptr<PrototypeAST> proto,
+                    std::unique_ptr<ExprAST> body)
+                : proto(std::move(proto)), body(std::move(body)) {}
 
-        Function *codegen();
+            Function *codegen();
     };
 } // end anonymous namespace
 
@@ -100,6 +118,11 @@ static int GetTokPrecedence() {
 
 // LogError - エラーを表示しnullptrを返してくれるエラーハンドリング関数
 std::unique_ptr<ExprAST> LogError(const char *Str) {
+    fprintf(stderr, "Error: %s\n", Str);
+    return nullptr;
+}
+
+std::unique_ptr<PrototypeAST> LogErrorP(const char *Str) {
     fprintf(stderr, "Error: %s\n", Str);
     return nullptr;
 }
@@ -140,11 +163,40 @@ static std::unique_ptr<ExprAST> ParseParenExpr() {
     return V;
 }
 
+// TODO 2.2: 識別子をパースしよう
+// トークンが識別子の場合は、引数(変数)の参照か関数の呼び出しの為、
+// 引数の参照である場合はVariableExprASTを返し、関数呼び出しの場合は
+// CallExprASTを返す。
+static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
+    return nullptr;
+    // 1. getIdentifierを用いて識別子を取得する。
+
+    // 2. トークンを次に進める。
+
+    // 3. 次のトークンが'('の場合は関数呼び出し。そうでない場合は、
+    // VariableExprASTを識別子を入れてインスタンス化し返す。
+
+    // 4. '('を読んでトークンを次に進める。
+
+    // 5. 関数fooの呼び出しfoo(3,4,5)の()内をパースする。
+    // 引数は数値、二項演算子、(親関数で定義された)引数である可能性があるので、
+    // ParseExpressionを用いる。
+    // 呼び出しが終わるまで(CurTok == ')'になるまで)引数をパースしていき、都度argsにpush_backする。
+    // 呼び出しの終わりと引数同士の区切りはCurTokが')'であるか','であるかで判別できることに注意。
+    std::vector<std::unique_ptr<ExprAST>> args;
+
+    // 6. トークンを次に進める。
+
+    // 7. CallExprASTを構成し、返す。
+}
+
 // ParsePrimary - NumberASTか括弧をパースする関数
 static std::unique_ptr<ExprAST> ParsePrimary() {
     switch (CurTok) {
         default:
             return LogError("unknown token when expecting an expression");
+        case tok_identifier:
+            return ParseIdentifierExpr();
         case tok_number:
             return ParseNumberExpr();
         case '(':
@@ -192,6 +244,25 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int CallerPrec,
         // LHS, RHSをBinaryASTにしてLHSに代入する。
         LHS = llvm::make_unique<BinaryAST>(BinOp, std::move(LHS), std::move(RHS));
     }
+}
+
+// TODO 2.3: 関数のシグネチャをパースしよう
+static std::unique_ptr<PrototypeAST> ParsePrototype() {
+    // 2.2とほぼ同じ。CallExprASTではなくPrototypeASTを返し、
+    // 引数同士の区切りが','ではなくgetNextToken()を呼ぶと直ぐに
+    // CurTokに次の引数(もしくは')')が入るという違いのみ。
+    return nullptr;
+}
+
+static std::unique_ptr<FunctionAST> ParseDefinition() {
+    getNextToken();
+    auto proto = ParsePrototype();
+    if (!proto)
+        return nullptr;
+
+    if (auto E = ParseExpression())
+        return llvm::make_unique<FunctionAST>(std::move(proto), std::move(E));
+    return nullptr;
 }
 
 // ExprASTは1. 数値リテラル 2. '('から始まる演算 3. 二項演算子の三通りが考えられる為、

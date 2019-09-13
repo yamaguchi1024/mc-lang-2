@@ -7,22 +7,31 @@
 // それが数値リテラルだった場合はnumValという変数にセットする。
 //===----------------------------------------------------------------------===//
 
-// このLexerでは、EOFと数値以外は[0-255]を返す('+'や'-'を含む)。
+// このLexerでは、EOF、数値、"def"、識別子以外は[0-255]を返す('+'や'-'を含む)。
 enum Token {
     tok_eof = -1,
-    tok_number = -5,
+    tok_def = -2,
+    tok_identifier = -3,
+    tok_number = -4
 };
 
 class Lexer {
     public:
         // gettok - トークンが数値だった場合はnumValにその数値をセットした上でtok_number
-        // を返し、'+'や他のunknown tokenだった場合はそのascii codeを返します。
+        // を返し、トークンが識別子だった場合はidentifierStrにその文字をセットした上でtok_identifierを返す。
+        // '+'や他のunknown tokenだった場合はそのascii codeを返す。
         int gettok() {
             static int lastChar = getNextChar(iFile);
 
             // スペースをスキップ
             while (isspace(lastChar))
                 lastChar = getNextChar(iFile);
+
+            // TODO 2.1: 識別子をトークナイズする
+            // 1.3と同様に、今読んでいる文字がアルファベットだった場合はアルファベットで
+            // なくなるまで読み込み、その値をidentifierStrにセットする。
+            // 読み込んだ文字が"def"だった場合は関数定義であるためtok_defをreturnし、
+            // そうでなければ引数の参照か関数呼び出しであるためtok_identifierをreturnする。
 
             // TODO 1.3: 数字のパーシングを実装してみよう
             // 今読んでいる文字(lastChar)が数字だった場合(isdigit(lastChar) == true)は、
@@ -81,11 +90,17 @@ class Lexer {
         uint64_t getNumVal() { return numVal; }
         void setnumVal(uint64_t numval) { numVal = numval; }
 
+        // 識別子を格納するIdentifierStrのgetter, setter
+        std::string getIdentifier() { return identifierStr; }
+        void setIdentifier(std::string str) { identifierStr = str; }
+
         void initStream(std::string fileName) { iFile.open(fileName); }
 
-            private:
+    private:
         std::ifstream iFile;
         uint64_t numVal;
+        // tok_identifierなら文字を入れる
+        std::string identifierStr;
         static char getNextChar(std::ifstream &is) {
             char c = '\0';
             if (is.good())
@@ -93,4 +108,4 @@ class Lexer {
 
             return c;
         }
-        };
+};

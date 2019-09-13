@@ -1,16 +1,13 @@
-`--> ./mc test/test4.mc 
-
-define i64 @__anon_expr() {
+define i64 @foobar(i64 %x, i64 %y, i64 %c) {
 entry:
-  ret i64 2
+  %addtmp = add i64 %x, %y
+  %subtmp = sub i64 %addtmp, %c
+  ret i64 %subtmp
+}
 
-entry1:                                           ; No predecessors!
-  ret i64 5
-
-entry2:                                           ; No predecessors!
-  ret i64 20
-
-entry3:                                           ; No predecessors!
-  ret i64 10028
+define i64 @myfunc(i64 %x, i64 %y) {
+entry:
+  %calltmp = call i64 @foobar(i64 %x, i64 %y, i64 5)
+  ret i64 %calltmp
 }
 Wrote output.o

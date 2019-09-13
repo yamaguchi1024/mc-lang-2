@@ -1,3 +1,2 @@
-# This is a comment
-;;;;;;23
-2040
+def myfunc ()
+    5 + 2 - (100 - (4 * 2));

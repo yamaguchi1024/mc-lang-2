@@ -1,13 +1,6 @@
-`--> ./mc test/test3.mc            
-
-define i64 @__anon_expr() {
+define i64 @myfunc(i64 %x, i64 %y) {
 entry:
-  ret i64 23
-
-entry1:                                           ; No predecessors!
-  ret i64 2040
-
-entry2:                                           ; No predecessors!
-  ret i64 50
+  %addtmp = add i64 %x, %y
+  ret i64 %addtmp
 }
 Wrote output.o
