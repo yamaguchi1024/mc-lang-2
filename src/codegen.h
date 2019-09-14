@@ -34,7 +34,6 @@ Value *VariableExprAST::codegen() {
     return nullptr;
     // NamedValuesの中にVariableExprAST::NameとマッチするValueがあるかチェックし、
     // あったらそのValueを返す。
-    // Look this variable up in the function.
 }
 
 // TODO 2.5: 関数呼び出しのcodegenを実装してみよう
@@ -45,7 +44,6 @@ Value *CallExprAST::codegen() {
 
     // 2. llvm::Function::arg_sizeと実際に渡されたargsのサイズを比べ、
     // サイズが間違っていたらエラーを出力。
-    // If argument mismatch error.
 
     std::vector<Value *> argsV;
     // 3. argsをそれぞれcodegenしllvm::Valueにし、argsVにpush_backする。
