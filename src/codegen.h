@@ -31,9 +31,13 @@ Value *LogErrorV(const char *str) {
 
 // TODO 2.4: 引数のcodegenを実装してみよう
 Value *VariableExprAST::codegen() {
-    return nullptr;
+    auto *V = NamedValues[variableName];
     // NamedValuesの中にVariableExprAST::NameとマッチするValueがあるかチェックし、
     // あったらそのValueを返す。
+    if(!V)
+        return LogErrorV("VariableExpr name not matching");
+    return V;
+
 }
 
 // TODO 2.5: 関数呼び出しのcodegenを実装してみよう
