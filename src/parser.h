@@ -169,7 +169,7 @@ static std::unique_ptr<ExprAST> ParseParenExpr() {
 // CallExprASTを返す。
 static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
     // 1. getIdentifierを用いて識別子を取得する。
-    auto identifer = lexer.getIdentifier();
+    std::string identifer = lexer.getIdentifier();
     // 2. トークンを次に進める。
     getNextToken();
     // 3. 次のトークンが'('の場合は関数呼び出し。そうでない場合は、
@@ -260,7 +260,27 @@ static std::unique_ptr<PrototypeAST> ParsePrototype() {
     // 2.2とほぼ同じ。CallExprASTではなくPrototypeASTを返し、
     // 引数同士の区切りが','ではなくgetNextToken()を呼ぶと直ぐに
     // CurTokに次の引数(もしくは')')が入るという違いのみ。
-    return nullptr;
+    std::string identifer = lexer.getIdentifier();
+    getNextToken(); // トークンを次に進める
+
+    // 3. 次のトークンが'('の場合は関数呼び出し。そうでない場合は、
+    // VariableExprASTを識別子を入れてインスタンス化し返す。
+    // if (CurTok !='('){
+    //     std::unique_ptr<ExprAST> evAST(new VariableExprAST(identifer));
+    //     return evAST;
+    // }
+
+    getNextToken(); //(を１つ読み飛ばす。
+
+    std::vector<std::string> args;
+    while (CurTok!=')'){
+        args.push_back(lexer.getIdentifier());
+        getNextToken();
+    }
+    getNextToken();
+    std::unique_ptr<PrototypeAST> ptAST(new PrototypeAST(identifer,std::move(args)));
+    return ptAST;
+
 }
 
 static std::unique_ptr<FunctionAST> ParseDefinition() {
