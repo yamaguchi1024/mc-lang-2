@@ -37,8 +37,8 @@ class Lexer {
                 alphaStr += lastChar;
                 while (isalpha(lastChar = getNextChar(iFile)))
                     alphaStr+= lastChar;
-                identifierStr = alphaStr;
-                if (identifierStr=="def")
+                setIdentifier(alphaStr);
+                if (getIdentifier()=="def")
                     return tok_def;
                 else
                     return tok_identifier;
