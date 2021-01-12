@@ -27,3 +27,10 @@ clang++ main.cpp output.o -o main
 main関数内のcoutにより正常に結果が表示されていれば大丈夫です。
 
 課題は以上になります。お疲れ様でした！
+
+### Continuous build status  
+  
+Build Type | Status  
+:-: | :-:  
+**Ubuntu 18.04 LTS Debug x64** | [![Ubuntu 18.04 LTS Debug x64](https://github.com/YuqiaoZhang/mc-lang-2/workflows/Ubuntu%2018.04%20LTS%20Debug%20x64/badge.svg)](https://github.com/YuqiaoZhang/mc-lang-2/actions?query=workflow%3A%22Ubuntu+18.04+LTS+Debug+x64%22)  
+  
